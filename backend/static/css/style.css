@@ -425,10 +425,141 @@ html, body {
   word-break: break-all;
 }
 
+/* Breach & Threat Intelligence Cards */
+.breach-banner {
+  padding: 14px 18px;
+  border-radius: var(--radius-md);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+}
+
+.breach-banner.pwned {
+  background-color: rgba(248, 81, 73, 0.12);
+  border: 1px solid var(--error-border);
+  color: var(--error-text);
+}
+
+.breach-banner.clean {
+  background-color: rgba(46, 160, 67, 0.12);
+  border: 1px solid var(--success-border);
+  color: var(--success-text);
+}
+
+.breach-banner-icon {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+}
+
+.results-badge.badge-danger {
+  background-color: rgba(248, 81, 73, 0.15);
+  color: #ff7b72;
+  border: 1px solid rgba(248, 81, 73, 0.4);
+}
+
+.results-badge.badge-safe {
+  background-color: rgba(46, 160, 67, 0.15);
+  color: #3fb950;
+  border: 1px solid rgba(46, 160, 67, 0.4);
+}
+
+.breach-card {
+  background-color: var(--surface-color);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-md);
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: border-color 0.2s ease, transform 0.15s ease;
+}
+
+.breach-card:hover {
+  border-color: #388bfd;
+  background-color: var(--surface-hover);
+}
+
+.breach-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.breach-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.breach-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.breach-domain {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.breach-date-badge {
+  font-size: 12px;
+  color: var(--text-secondary);
+  background-color: rgba(255, 255, 255, 0.05);
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+}
+
+.breach-description {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.breach-meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  font-size: 12.5px;
+  color: var(--text-muted);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  padding-top: 10px;
+}
+
+.breach-dataclasses {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin-top: 4px;
+}
+
+.dataclass-pill {
+  font-size: 11px;
+  font-weight: 500;
+  background-color: rgba(56, 139, 253, 0.12);
+  color: #79c0ff;
+  border: 1px solid rgba(56, 139, 253, 0.25);
+  padding: 2px 8px;
+  border-radius: 12px;
+}
+
+.dataclass-pill.sensitive {
+  background-color: rgba(248, 81, 73, 0.12);
+  color: #ff7b72;
+  border-color: rgba(248, 81, 73, 0.3);
+}
+
 /* Empty state */
 .results-empty {
   text-align: center;
-  padding: 24px;
+  padding: 28px;
   color: var(--text-secondary);
   font-size: 14px;
 }

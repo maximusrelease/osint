@@ -60,6 +60,15 @@ Once running, access:
 - **Interactive OpenAPI Docs (Swagger UI)**: [http://127.0.0.1:8000/api/v1/docs](http://127.0.0.1:8000/api/v1/docs)
 - **ReDoc Documentation**: [http://127.0.0.1:8000/api/v1/redoc](http://127.0.0.1:8000/api/v1/redoc)
 - **Health Check Endpoint**: [http://127.0.0.1:8000/api/v1/health](http://127.0.0.1:8000/api/v1/health)
+- **Breach Check Endpoint**: `POST /api/breach-check` or `POST /api/v1/breach-check`
+
+### Have I Been Pwned (HIBP) Configuration
+Create a `.env` file inside `backend/`:
+```env
+HIBP_API_KEY=your_hibp_api_key_here
+HIBP_USER_AGENT=OSINT-Intel-Platform/1.0
+```
+> The API key remains strictly server-side and is never sent to or visible from the frontend.
 
 ---
 

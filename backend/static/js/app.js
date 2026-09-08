@@ -178,7 +178,7 @@
   }
 
   /**
-   * Perform backend search via fetch()
+   * Perform backend search or HIBP breach check via fetch()
    * @param {string} type
    * @param {string} query
    */
@@ -186,13 +186,22 @@
     setLoadingState(true);
 
     try {
-      const response = await fetch('/api/v1/search', {
+      let endpoint = '/api/v1/search';
+      let requestBody = { type: type, query: query };
+
+      // Use the dedicated HIBP breach check endpoint for email queries
+      if (type === 'email') {
+        endpoint = '/api/breach-check';
+        requestBody = { email: query };
+      }
+
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
-        body: JSON.stringify({ type: type, query: query }),
+        body: JSON.stringify(requestBody),
       });
 
       const data = await response.json();
@@ -203,7 +212,11 @@
         return;
       }
 
-      renderResults(data);
+      if (type === 'email' && typeof data.pwned !== 'undefined') {
+        renderBreachResults(data);
+      } else {
+        renderGenericResults(data);
+      }
     } catch (err) {
       showError('Unable to connect to intelligence backend. Please verify your connection.');
     } finally {
@@ -212,16 +225,153 @@
   }
 
   /**
-   * Safely render search results without innerHTML injection
+   * Safely render HIBP breach intelligence results without innerHTML injection
    * @param {Object} data
    */
-  function renderResults(data) {
+  function renderBreachResults(data) {
     if (!elements.resultsSection || !elements.resultsList) return;
 
     // Reset results list safely
     while (elements.resultsList.firstChild) {
       elements.resultsList.removeChild(elements.resultsList.firstChild);
     }
+
+    const breaches = data.breaches || [];
+    const count = typeof data.count === 'number' ? data.count : breaches.length;
+    const isPwned = !!data.pwned;
+
+    // Reset badge classes
+    elements.resultsBadge.className = 'results-badge';
+
+    if (elements.resultsTitle) {
+      elements.resultsTitle.textContent = isPwned
+        ? 'Breach Incidents (' + count + ' Detected)'
+        : 'Breach Check Result';
+    }
+
+    if (elements.resultsBadge) {
+      if (isPwned) {
+        elements.resultsBadge.textContent = 'Compromised';
+        elements.resultsBadge.classList.add('badge-danger');
+      } else {
+        elements.resultsBadge.textContent = 'Clean / No Breaches';
+        elements.resultsBadge.classList.add('badge-safe');
+      }
+    }
+
+    // Top status banner
+    const banner = document.createElement('div');
+    banner.className = 'breach-banner ' + (isPwned ? 'pwned' : 'clean');
+
+    const bannerText = document.createElement('span');
+    bannerText.textContent = data.message || (isPwned
+      ? 'Warning: This email address has been detected in known data breaches.'
+      : 'Good news: No data breaches detected for this email address.');
+    banner.appendChild(bannerText);
+    elements.resultsList.appendChild(banner);
+
+    if (!isPwned || breaches.length === 0) {
+      elements.resultsSection.style.display = 'block';
+      return;
+    }
+
+    // Render individual breach cards
+    breaches.forEach(function (b) {
+      const card = document.createElement('div');
+      card.className = 'breach-card';
+
+      // Top Row (Title + Date)
+      const topRow = document.createElement('div');
+      topRow.className = 'breach-card-top';
+
+      const titleGroup = document.createElement('div');
+      titleGroup.className = 'breach-title-group';
+
+      const titleEl = document.createElement('span');
+      titleEl.className = 'breach-name';
+      titleEl.textContent = b.title || b.name || 'Unnamed Breach';
+
+      const domainEl = document.createElement('span');
+      domainEl.className = 'breach-domain';
+      domainEl.textContent = b.domain ? b.domain : (b.is_verified ? 'Verified Incident' : 'Unverified Incident');
+
+      titleGroup.appendChild(titleEl);
+      titleGroup.appendChild(domainEl);
+      topRow.appendChild(titleGroup);
+
+      if (b.breach_date) {
+        const dateBadge = document.createElement('span');
+        dateBadge.className = 'breach-date-badge';
+        dateBadge.textContent = 'Breached: ' + b.breach_date;
+        topRow.appendChild(dateBadge);
+      }
+
+      card.appendChild(topRow);
+
+      // Description
+      if (b.description) {
+        const descEl = document.createElement('p');
+        descEl.className = 'breach-description';
+        descEl.textContent = b.description;
+        card.appendChild(descEl);
+      }
+
+      // Meta row (Pwn count, verified status)
+      const metaRow = document.createElement('div');
+      metaRow.className = 'breach-meta-row';
+
+      if (typeof b.pwn_count === 'number') {
+        const countSpan = document.createElement('span');
+        countSpan.textContent = 'Impacted Accounts: ' + b.pwn_count.toLocaleString();
+        metaRow.appendChild(countSpan);
+      }
+
+      if (b.is_sensitive) {
+        const sensitiveSpan = document.createElement('span');
+        sensitiveSpan.style.color = '#ff7b72';
+        sensitiveSpan.textContent = 'Sensitive Data';
+        metaRow.appendChild(sensitiveSpan);
+      }
+
+      card.appendChild(metaRow);
+
+      // Compromised Data Classes pills
+      if (Array.isArray(b.data_classes) && b.data_classes.length > 0) {
+        const dataClassesWrapper = document.createElement('div');
+        dataClassesWrapper.className = 'breach-dataclasses';
+
+        b.data_classes.forEach(function (dataClass) {
+          const pill = document.createElement('span');
+          pill.className = 'dataclass-pill';
+          if (dataClass.toLowerCase().includes('password') || dataClass.toLowerCase().includes('credential')) {
+            pill.classList.add('sensitive');
+          }
+          pill.textContent = dataClass;
+          dataClassesWrapper.appendChild(pill);
+        });
+
+        card.appendChild(dataClassesWrapper);
+      }
+
+      elements.resultsList.appendChild(card);
+    });
+
+    elements.resultsSection.style.display = 'block';
+  }
+
+  /**
+   * Safely render generic search results without innerHTML injection
+   * @param {Object} data
+   */
+  function renderGenericResults(data) {
+    if (!elements.resultsSection || !elements.resultsList) return;
+
+    // Reset results list safely
+    while (elements.resultsList.firstChild) {
+      elements.resultsList.removeChild(elements.resultsList.firstChild);
+    }
+
+    elements.resultsBadge.className = 'results-badge';
 
     const records = (data && data.records) || [];
     const total = data.total_results || records.length;
