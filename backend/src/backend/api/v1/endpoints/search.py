@@ -1,19 +1,20 @@
 import re
-from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException, status
-from backend.schemas.search import SearchRecord, SearchRequest, SearchResponse
+from backend.schemas.search import SearchRequest, SearchResponse
+from backend.services.providers.registry import aggregator
 
 router = APIRouter()
 
 EMAIL_REGEX = re.compile(r"^[\w\.-]+@[\w\.-]+\.\w+$")
 PHONE_REGEX = re.compile(r"^\+?[0-9\s\-\(\)]{7,20}$")
+DOMAIN_REGEX = re.compile(r"^(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$")
 
 
 @router.post(
     "/search",
     response_model=SearchResponse,
-    summary="Execute Intelligence Search",
-    description="Search by username, email, or phone identifier.",
+    summary="Execute Aggregated Intelligence Search",
+    description="Concurrently search across all pluggable OSINT, breach, and threat intelligence providers.",
 )
 async def execute_search(request: SearchRequest) -> SearchResponse:
     query = request.query.strip()
@@ -29,6 +30,15 @@ async def execute_search(request: SearchRequest) -> SearchResponse:
                 status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail="Invalid email address format.",
             )
+    elif request.type == "domain":
+        # Strip scheme if user pasted full URL
+        clean_domain = re.sub(r"^https?://", "", query).split("/")[0].strip()
+        if not DOMAIN_REGEX.match(clean_domain):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail="Invalid domain format (e.g., example.com).",
+            )
+        query = clean_domain
     elif request.type == "phone":
         if not PHONE_REGEX.match(query):
             raise HTTPException(
@@ -42,40 +52,4 @@ async def execute_search(request: SearchRequest) -> SearchResponse:
                 detail="Username must be at least 2 characters.",
             )
 
-    # Simulated intelligence records for testing/demonstration
-    now_iso = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-
-    # Generate realistic intelligence records safely
-    records = [
-        SearchRecord(
-            source="Breach Index #849",
-            record_type=request.type.upper(),
-            identifier=query,
-            details={
-                "Status": "Exposed in legacy leak",
-                "Hash Type": "SHA-256 (Salted)",
-                "Security Recommendation": "Rotate associated credentials",
-            },
-            timestamp=now_iso,
-        ),
-        SearchRecord(
-            source="Public Threat Intel Feed",
-            record_type="OSINT_CORRELATION",
-            identifier=query,
-            details={
-                "Confidence Score": "High (94%)",
-                "Observed Mentions": "14 forum indexes",
-                "Status": "Verified entry",
-            },
-            timestamp=now_iso,
-        ),
-    ]
-
-    return SearchResponse(
-        success=True,
-        type=request.type,
-        query=query,
-        total_results=len(records),
-        records=records,
-        message=f"Found {len(records)} correlated records for '{query}'.",
-    )
+    return await aggregator.execute_search(query=query, query_type=request.type)

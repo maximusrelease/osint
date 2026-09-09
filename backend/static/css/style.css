@@ -425,7 +425,9 @@ html, body {
   word-break: break-all;
 }
 
-/* Breach & Threat Intelligence Cards */
+/* ==========================================================================
+   XposedOrNot Breach Intelligence Styling
+   ========================================================================== */
 .breach-banner {
   padding: 14px 18px;
   border-radius: var(--radius-md);
@@ -449,8 +451,8 @@ html, body {
 }
 
 .breach-banner-icon {
-  width: 22px;
-  height: 22px;
+  font-size: 20px;
+  line-height: 1;
   flex-shrink: 0;
 }
 
@@ -470,16 +472,17 @@ html, body {
   background-color: var(--surface-color);
   border: 1px solid var(--surface-border);
   border-radius: var(--radius-md);
-  padding: 16px 18px;
+  padding: 18px;
   display: flex;
   flex-direction: column;
   gap: 12px;
-  transition: border-color 0.2s ease, transform 0.15s ease;
+  transition: border-color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
 }
 
 .breach-card:hover {
   border-color: #388bfd;
   background-color: var(--surface-hover);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
 }
 
 .breach-card-top {
@@ -489,10 +492,27 @@ html, body {
   gap: 12px;
 }
 
+.breach-left-group {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.breach-logo {
+  width: 42px;
+  height: 42px;
+  border-radius: var(--radius-sm);
+  background-color: rgba(255, 255, 255, 0.04);
+  padding: 4px;
+  object-fit: contain;
+  border: 1px solid var(--surface-border);
+  flex-shrink: 0;
+}
+
 .breach-title-group {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
 }
 
 .breach-name {
@@ -501,9 +521,33 @@ html, body {
   color: var(--text-primary);
 }
 
-.breach-domain {
-  font-size: 12px;
+.provider-source-pill {
+  display: inline-flex;
+  font-size: 11px;
+  font-weight: 500;
+  color: #58a6ff;
+  background-color: rgba(56, 139, 253, 0.1);
+  border: 1px solid rgba(56, 139, 253, 0.2);
+  padding: 1px 6px;
+  border-radius: 4px;
+  width: fit-content;
+}
+
+.breach-sub-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
   color: var(--text-muted);
+}
+
+.breach-domain {
+  color: var(--target-accent);
+  font-weight: 500;
+}
+
+.breach-industry {
+  color: var(--text-secondary);
 }
 
 .breach-date-badge {
@@ -516,20 +560,39 @@ html, body {
 }
 
 .breach-description {
-  font-size: 13px;
+  font-size: 13.5px;
   color: var(--text-secondary);
-  line-height: 1.5;
+  line-height: 1.55;
 }
 
 .breach-meta-row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 16px;
+  gap: 14px;
   font-size: 12.5px;
   color: var(--text-muted);
   border-top: 1px solid rgba(255, 255, 255, 0.05);
   padding-top: 10px;
+}
+
+.password-risk-tag {
+  font-size: 11.5px;
+  padding: 2px 7px;
+  border-radius: var(--radius-sm);
+  font-weight: 500;
+}
+
+.password-risk-tag.high-risk {
+  background-color: rgba(248, 81, 73, 0.15);
+  color: #ff7b72;
+  border: 1px solid rgba(248, 81, 73, 0.3);
+}
+
+.password-risk-tag.low-risk {
+  background-color: rgba(56, 139, 253, 0.12);
+  color: #79c0ff;
+  border: 1px solid rgba(56, 139, 253, 0.25);
 }
 
 .breach-dataclasses {
@@ -537,7 +600,7 @@ html, body {
   flex-wrap: wrap;
   gap: 6px;
   align-items: center;
-  margin-top: 4px;
+  margin-top: 2px;
 }
 
 .dataclass-pill {
@@ -551,9 +614,259 @@ html, body {
 }
 
 .dataclass-pill.sensitive {
-  background-color: rgba(248, 81, 73, 0.12);
+  background-color: rgba(248, 81, 73, 0.14);
   color: #ff7b72;
   border-color: rgba(248, 81, 73, 0.3);
+}
+
+/* ==========================================================================
+   OmniScan Branding & Multi-Tool Suite Styles
+   ========================================================================== */
+.omniscan-header {
+  text-align: center;
+  margin-bottom: 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.omniscan-brand-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(56, 139, 253, 0.1);
+  border: 1px solid rgba(56, 139, 253, 0.28);
+  border-radius: 20px;
+  padding: 4px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #79c0ff;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+.omniscan-pulse-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: #388bfd;
+  box-shadow: 0 0 8px #388bfd;
+  animation: pulse-glow 2s infinite ease-in-out;
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.85); }
+}
+
+.omniscan-title {
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  background: linear-gradient(135deg, #ffffff 30%, #79c0ff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 8px;
+}
+
+.omniscan-subtitle {
+  font-size: 14px;
+  color: var(--text-secondary);
+  max-width: 580px;
+  line-height: 1.5;
+}
+
+/* OmniScan Multi-Tool Execution Dashboard Panel */
+.omniscan-suite-panel {
+  width: 100%;
+  background: rgba(18, 23, 32, 0.9);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-lg);
+  padding: 18px 20px;
+  margin-bottom: 24px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(10px);
+}
+
+.omniscan-suite-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 14px;
+  margin-bottom: 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.omniscan-suite-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-primary);
+}
+
+.omniscan-suite-icon {
+  font-size: 15px;
+  color: #e3b341;
+}
+
+.omniscan-suite-meta {
+  font-size: 12px;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.omniscan-latency-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(110, 118, 129, 0.15);
+  border: 1px solid rgba(110, 118, 129, 0.3);
+  padding: 2px 8px;
+  border-radius: 12px;
+  color: #8b949e;
+  font-family: monospace;
+  font-size: 11px;
+}
+
+.omniscan-tools-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.omniscan-tool-chip {
+  background: rgba(21, 26, 36, 0.75);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  user-select: none;
+}
+
+.omniscan-tool-chip:hover {
+  background: var(--surface-hover);
+  border-color: rgba(56, 139, 253, 0.4);
+  transform: translateY(-1px);
+}
+
+.omniscan-tool-chip.selected {
+  border-color: var(--primary-blue);
+  background: rgba(31, 111, 235, 0.15);
+  box-shadow: 0 0 12px rgba(31, 111, 235, 0.2);
+}
+
+.omniscan-tool-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.omniscan-tool-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.omniscan-tool-latency {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-family: monospace;
+}
+
+.omniscan-tool-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.omniscan-tool-status {
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 7px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.omniscan-tool-status.status-clean {
+  background: rgba(46, 160, 67, 0.15);
+  color: #3fb950;
+  border: 1px solid rgba(46, 160, 67, 0.3);
+}
+
+.omniscan-tool-status.status-breached {
+  background: rgba(248, 81, 73, 0.16);
+  color: #ff7b72;
+  border: 1px solid rgba(248, 81, 73, 0.3);
+}
+
+.omniscan-tool-status.status-findings {
+  background: rgba(56, 139, 253, 0.15);
+  color: #79c0ff;
+  border: 1px solid rgba(56, 139, 253, 0.3);
+}
+
+.omniscan-tool-status.status-failed {
+  background: rgba(218, 54, 51, 0.2);
+  color: #f85149;
+  border: 1px solid var(--error-border);
+}
+
+.omniscan-card-tag {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: rgba(56, 139, 253, 0.1);
+  color: #388bfd;
+  border: 1px solid rgba(56, 139, 253, 0.2);
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+/* Filter bar controls */
+.omniscan-filter-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.omniscan-filter-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.omniscan-filter-reset {
+  background: transparent;
+  border: none;
+  color: #79c0ff;
+  font-size: 11px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-decoration: underline;
+}
+
+.omniscan-filter-reset:hover {
+  color: #a5d6ff;
 }
 
 /* Empty state */

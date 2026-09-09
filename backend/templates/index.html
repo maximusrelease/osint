@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cyber Intelligence Search</title>
-  <meta name="description" content="Unified OSINT and cyber intelligence search interface for identifying usernames, emails, and phone records.">
+  <title>OmniScan &mdash; Cyber Intelligence Search & OSINT Engine</title>
+  <meta name="description" content="OmniScan unified OSINT multi-tool cyber intelligence search engine for emails, domains, phone numbers, and usernames.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', path='css/style.css') }}">
 </head>
 <body>
@@ -15,25 +15,21 @@
     <!-- Center Content Wrapper -->
     <div class="search-layout">
 
+      <!-- OmniScan Brand & Hero Header -->
+      <header class="omniscan-header">
+        <div class="omniscan-brand-badge">
+          <span class="omniscan-pulse-dot" aria-hidden="true"></span>
+          <span>OmniScan Multi-Tool Engine</span>
+        </div>
+        <h1 class="omniscan-title">OmniScan</h1>
+        <p class="omniscan-subtitle">
+          Cyber Intelligence Search &mdash; concurrent multi-tool OSINT scanning across breach databases, mail DNS routing, burner detection, and live threat telemetry.
+        </p>
+      </header>
+
       <!-- Mode Selector Segmented Tabs -->
       <nav class="mode-selector-wrapper" aria-label="Search Mode Selection">
         <div class="segmented-selector" role="tablist">
-          <button
-            type="button"
-            id="mode-username"
-            class="mode-btn"
-            role="tab"
-            aria-selected="false"
-            data-mode="username"
-            data-placeholder="Enter a username..."
-          >
-            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <circle cx="12" cy="12" r="4"></circle>
-              <path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-4 8"></path>
-            </svg>
-            <span>Username</span>
-          </button>
-
           <button
             type="button"
             id="mode-email"
@@ -48,6 +44,39 @@
               <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
             </svg>
             <span>Email</span>
+          </button>
+
+          <button
+            type="button"
+            id="mode-domain"
+            class="mode-btn"
+            role="tab"
+            aria-selected="false"
+            data-mode="domain"
+            data-placeholder="Enter a domain name (e.g., example.com)..."
+          >
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="2" y1="12" x2="22" y2="12"></line>
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+            </svg>
+            <span>Domain</span>
+          </button>
+
+          <button
+            type="button"
+            id="mode-username"
+            class="mode-btn"
+            role="tab"
+            aria-selected="false"
+            data-mode="username"
+            data-placeholder="Enter a username..."
+          >
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="4"></circle>
+              <path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-4 8"></path>
+            </svg>
+            <span>Username</span>
           </button>
 
           <button
@@ -146,6 +175,23 @@
 
       <!-- Results Container -->
       <section id="results-section" class="results-section" aria-live="polite" style="display: none;">
+        <!-- OmniScan Engine Suite Status Panel -->
+        <div id="omniscan-suite-panel" class="omniscan-suite-panel">
+          <div class="omniscan-suite-header">
+            <div class="omniscan-suite-title">
+              <span class="omniscan-suite-icon">⚡</span>
+              <span class="omniscan-suite-name">OmniScan Multi-Tool Execution Pipeline</span>
+            </div>
+            <div class="omniscan-suite-meta" id="omniscan-suite-meta">
+              <!-- Dynamically populated with execution latency & tool count -->
+            </div>
+          </div>
+          <!-- OmniScan Sub-Tools Chips / Filter Row -->
+          <div class="omniscan-tools-grid" id="omniscan-tools-grid">
+            <!-- Dynamically populated per tool -->
+          </div>
+        </div>
+
         <div class="results-header">
           <h2 id="results-title" class="results-title">Intelligence Findings</h2>
           <span id="results-badge" class="results-badge"></span>

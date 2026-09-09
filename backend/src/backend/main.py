@@ -9,7 +9,6 @@ from fastapi.templating import Jinja2Templates
 import uvicorn
 
 from backend.api.router import api_router
-from backend.api.v1.endpoints.breach import router as breach_router
 from backend.api.v1.endpoints.search import router as search_router
 from backend.config import get_settings
 
@@ -56,7 +55,6 @@ def create_app() -> FastAPI:
     # Mount API routers under versioned prefix (/api/v1) and convenience alias (/api)
     app.include_router(api_router, prefix=settings.API_V1_STR)
     app.include_router(search_router, prefix="/api", tags=["Search"])
-    app.include_router(breach_router, prefix="/api", tags=["Breach Intelligence"])
 
     @app.get("/", response_class=HTMLResponse, tags=["Frontend"])
     async def home(request: Request):

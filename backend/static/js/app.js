@@ -11,6 +11,8 @@
   const state = {
     currentMode: 'email',
     isLoading: false,
+    activeFilterTool: null,
+    lastResultsData: null,
   };
 
   // DOM Elements cache
@@ -25,6 +27,9 @@
     inlineError: document.getElementById('inline-error'),
     inlineErrorText: document.getElementById('inline-error-text'),
     resultsSection: document.getElementById('results-section'),
+    omniscanSuitePanel: document.getElementById('omniscan-suite-panel'),
+    omniscanSuiteMeta: document.getElementById('omniscan-suite-meta'),
+    omniscanToolsGrid: document.getElementById('omniscan-tools-grid'),
     resultsTitle: document.getElementById('results-title'),
     resultsBadge: document.getElementById('results-badge'),
     resultsList: document.getElementById('results-list'),
@@ -33,6 +38,7 @@
   // Regular expressions for validation
   const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const PHONE_REGEX = /^\+?[0-9\s\-\(\)]{7,20}$/;
+  const DOMAIN_REGEX = /^(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/;
 
   /**
    * Initialize application
@@ -92,7 +98,13 @@
       event.preventDefault();
       if (state.isLoading) return;
 
-      const rawQuery = elements.searchInput.value ? elements.searchInput.value.trim() : '';
+      let rawQuery = elements.searchInput.value ? elements.searchInput.value.trim() : '';
+
+      // Auto-clean domain input if URL was pasted
+      if (state.currentMode === 'domain') {
+        rawQuery = rawQuery.replace(/^https?:\/\//i, '').split('/')[0].trim();
+      }
+
       const validationError = validateInput(state.currentMode, rawQuery);
 
       if (validationError) {
@@ -114,6 +126,7 @@
   function validateInput(mode, query) {
     if (!query) {
       if (mode === 'email') return 'Please enter an email address.';
+      if (mode === 'domain') return 'Please enter a domain name.';
       if (mode === 'phone') return 'Please enter a phone number.';
       return 'Please enter a username.';
     }
@@ -121,6 +134,11 @@
     if (mode === 'email') {
       if (!EMAIL_REGEX.test(query)) {
         return 'Please enter a valid email address (e.g., user@example.com).';
+      }
+    } else if (mode === 'domain') {
+      const clean = query.replace(/^https?:\/\//i, '').split('/')[0].trim();
+      if (!DOMAIN_REGEX.test(clean)) {
+        return 'Please enter a valid domain name (e.g., example.com).';
       }
     } else if (mode === 'phone') {
       if (!PHONE_REGEX.test(query)) {
@@ -178,22 +196,17 @@
   }
 
   /**
-   * Perform backend search or HIBP breach check via fetch()
+   * Perform unified backend search across all active OSINT providers via fetch()
    * @param {string} type
    * @param {string} query
    */
   async function performSearch(type, query) {
     setLoadingState(true);
+    state.activeFilterTool = null;
 
     try {
-      let endpoint = '/api/v1/search';
-      let requestBody = { type: type, query: query };
-
-      // Use the dedicated HIBP breach check endpoint for email queries
-      if (type === 'email') {
-        endpoint = '/api/breach-check';
-        requestBody = { email: query };
-      }
+      const endpoint = '/api/search';
+      const requestBody = { type: type, query: query };
 
       const response = await fetch(endpoint, {
         method: 'POST',
@@ -212,11 +225,7 @@
         return;
       }
 
-      if (type === 'email' && typeof data.pwned !== 'undefined') {
-        renderBreachResults(data);
-      } else {
-        renderGenericResults(data);
-      }
+      renderAggregatedResults(data);
     } catch (err) {
       showError('Unable to connect to intelligence backend. Please verify your connection.');
     } finally {
@@ -225,214 +234,296 @@
   }
 
   /**
-   * Safely render HIBP breach intelligence results without innerHTML injection
+   * Helper to return emoji icons for OmniScan sub-tools
+   */
+  function getToolIcon(providerId) {
+    if (!providerId) return '⚡';
+    const id = providerId.toLowerCase();
+    if (id.includes('xposed') || id.includes('breach')) return '🛡️';
+    if (id.includes('dns') || id.includes('mail')) return '🌐';
+    if (id.includes('disposable') || id.includes('burner') || id.includes('reputation')) return '✉️';
+    if (id.includes('threat') || id.includes('feed') || id.includes('intel')) return '📡';
+    if (id.includes('phone')) return '📱';
+    return '⚡';
+  }
+
+  /**
+   * Render the OmniScan Multi-Tool Orchestration Deck
    * @param {Object} data
    */
-  function renderBreachResults(data) {
+  function renderOmniScanSuite(data) {
+    if (!elements.omniscanSuitePanel || !elements.omniscanToolsGrid) return;
+
+    const tools = data.tool_telemetry || [];
+    const executionMs = typeof data.execution_time_ms === 'number' ? data.execution_time_ms : 0;
+    const totalTools = tools.length;
+
+    // Update Suite Meta
+    if (elements.omniscanSuiteMeta) {
+      elements.omniscanSuiteMeta.textContent = '';
+
+      const latencyBadge = document.createElement('span');
+      latencyBadge.className = 'omniscan-latency-badge';
+      latencyBadge.textContent = '⚡ ' + executionMs + ' ms';
+      elements.omniscanSuiteMeta.appendChild(latencyBadge);
+
+      const countSpan = document.createElement('span');
+      countSpan.textContent = totalTools + ' Tools Executed Concurrently';
+      elements.omniscanSuiteMeta.appendChild(countSpan);
+    }
+
+    // Clear grid
+    while (elements.omniscanToolsGrid.firstChild) {
+      elements.omniscanToolsGrid.removeChild(elements.omniscanToolsGrid.firstChild);
+    }
+
+    tools.forEach(function (tool) {
+      const isSelected = state.activeFilterTool === tool.display_name;
+      const chip = document.createElement('div');
+      chip.className = 'omniscan-tool-chip' + (isSelected ? ' selected' : '');
+      chip.setAttribute('role', 'button');
+      chip.setAttribute('tabindex', '0');
+      chip.setAttribute('title', 'Click to filter findings by ' + tool.display_name);
+
+      // Top Row (Icon + Name, Latency)
+      const topRow = document.createElement('div');
+      topRow.className = 'omniscan-tool-top';
+
+      const nameEl = document.createElement('span');
+      nameEl.className = 'omniscan-tool-name';
+      nameEl.textContent = getToolIcon(tool.provider_id) + ' ' + tool.display_name;
+      topRow.appendChild(nameEl);
+
+      const latEl = document.createElement('span');
+      latEl.className = 'omniscan-tool-latency';
+      latEl.textContent = (tool.execution_time_ms || 0) + ' ms';
+      topRow.appendChild(latEl);
+
+      chip.appendChild(topRow);
+
+      // Bottom Row (Status pill)
+      const botRow = document.createElement('div');
+      botRow.className = 'omniscan-tool-bottom';
+
+      const statusPill = document.createElement('span');
+      if (tool.status === 'clean') {
+        statusPill.className = 'omniscan-tool-status status-clean';
+        statusPill.textContent = '🛡️ 0 Breaches (Clean)';
+      } else if (tool.status === 'failed') {
+        statusPill.className = 'omniscan-tool-status status-failed';
+        statusPill.textContent = '⚠️ ' + (tool.summary || 'Failed');
+      } else {
+        const count = tool.records_count || 0;
+        statusPill.className = 'omniscan-tool-status status-findings';
+        statusPill.textContent = '✓ ' + count + ' record' + (count === 1 ? '' : 's');
+      }
+      botRow.appendChild(statusPill);
+
+      chip.appendChild(botRow);
+
+      // Click to filter by this tool
+      chip.addEventListener('click', function () {
+        if (state.activeFilterTool === tool.display_name) {
+          state.activeFilterTool = null;
+        } else {
+          state.activeFilterTool = tool.display_name;
+        }
+        renderAggregatedResults(state.lastResultsData);
+      });
+
+      elements.omniscanToolsGrid.appendChild(chip);
+    });
+
+    // If an active filter is set, display filter banner with reset option
+    if (state.activeFilterTool) {
+      const filterBar = document.createElement('div');
+      filterBar.className = 'omniscan-filter-bar';
+      filterBar.style.gridColumn = '1 / -1';
+
+      const hint = document.createElement('span');
+      hint.className = 'omniscan-filter-hint';
+      hint.textContent = 'Showing findings filtered by: ' + state.activeFilterTool;
+      filterBar.appendChild(hint);
+
+      const resetBtn = document.createElement('button');
+      resetBtn.type = 'button';
+      resetBtn.className = 'omniscan-filter-reset';
+      resetBtn.textContent = 'Show All OmniScan Tools';
+      resetBtn.addEventListener('click', function () {
+        state.activeFilterTool = null;
+        renderAggregatedResults(state.lastResultsData);
+      });
+      filterBar.appendChild(resetBtn);
+
+      elements.omniscanToolsGrid.appendChild(filterBar);
+    }
+  }
+
+  /**
+   * Safely render aggregated multi-provider intelligence results without innerHTML injection
+   * @param {Object} data
+   */
+  function renderAggregatedResults(data) {
     if (!elements.resultsSection || !elements.resultsList) return;
+
+    state.lastResultsData = data;
+    renderOmniScanSuite(data);
 
     // Reset results list safely
     while (elements.resultsList.firstChild) {
       elements.resultsList.removeChild(elements.resultsList.firstChild);
     }
 
-    const breaches = data.breaches || [];
-    const count = typeof data.count === 'number' ? data.count : breaches.length;
-    const isPwned = !!data.pwned;
-
-    // Reset badge classes
     elements.resultsBadge.className = 'results-badge';
 
+    const allRecords = (data && data.records) || [];
+    const records = state.activeFilterTool
+      ? allRecords.filter(function (r) { return r.source === state.activeFilterTool; })
+      : allRecords;
+
+    const total = records.length;
+
+    // Check for high-risk / breach presence in records
+    const hasBreaches = records.some(function (r) {
+      return (
+        r.record_type === 'DATA_BREACH' ||
+        (r.risk_level && ['High', 'Critical'].includes(r.risk_level))
+      );
+    });
+
+    // Update Header
     if (elements.resultsTitle) {
-      elements.resultsTitle.textContent = isPwned
-        ? 'Breach Incidents (' + count + ' Detected)'
-        : 'Breach Check Result';
+      if (state.activeFilterTool) {
+        elements.resultsTitle.textContent = state.activeFilterTool + ' (' + total + ')';
+      } else {
+        elements.resultsTitle.textContent = 'OmniScan Findings (' + total + ')';
+      }
     }
 
     if (elements.resultsBadge) {
-      if (isPwned) {
-        elements.resultsBadge.textContent = 'Compromised';
+      if (hasBreaches) {
+        elements.resultsBadge.textContent = 'Exposure Detected (' + total + ' records)';
         elements.resultsBadge.classList.add('badge-danger');
+      } else if (total > 0) {
+        elements.resultsBadge.textContent = 'Correlated Matches (' + total + ')';
+        elements.resultsBadge.classList.add('badge-safe');
       } else {
-        elements.resultsBadge.textContent = 'Clean / No Breaches';
+        elements.resultsBadge.textContent = 'Clean / No Matches';
         elements.resultsBadge.classList.add('badge-safe');
       }
     }
 
     // Top status banner
     const banner = document.createElement('div');
-    banner.className = 'breach-banner ' + (isPwned ? 'pwned' : 'clean');
+    banner.className = 'breach-banner ' + (hasBreaches ? 'pwned' : 'clean');
+
+    const bannerIcon = document.createElement('span');
+    bannerIcon.className = 'breach-banner-icon';
+    bannerIcon.textContent = hasBreaches ? '⚠️' : '🛡️';
+    banner.appendChild(bannerIcon);
 
     const bannerText = document.createElement('span');
-    bannerText.textContent = data.message || (isPwned
-      ? 'Warning: This email address has been detected in known data breaches.'
-      : 'Good news: No data breaches detected for this email address.');
+    bannerText.textContent = data.message || (hasBreaches
+      ? 'Security Warning: Intelligence matches detected across OmniScan tools.'
+      : 'Good news: No security alerts or exposures located across active tools.');
     banner.appendChild(bannerText);
     elements.resultsList.appendChild(banner);
 
-    if (!isPwned || breaches.length === 0) {
+    if (records.length === 0) {
+      const emptyDiv = document.createElement('div');
+      emptyDiv.className = 'results-empty';
+      emptyDiv.textContent = state.activeFilterTool
+        ? 'No records located from ' + state.activeFilterTool + ' for this identifier.'
+        : 'No records located across active OmniScan intelligence tools.';
+      elements.resultsList.appendChild(emptyDiv);
       elements.resultsSection.style.display = 'block';
       return;
     }
 
-    // Render individual breach cards
-    breaches.forEach(function (b) {
+    // Render each record card using safe DOM methods
+    records.forEach(function (rec) {
       const card = document.createElement('div');
-      card.className = 'breach-card';
+      card.className = 'result-card ' + (rec.record_type === 'DATA_BREACH' ? 'breach-result' : '');
 
-      // Top Row (Title + Date)
+      // Top Row (Logo/Source, Title, Risk Badge, Timestamp)
       const topRow = document.createElement('div');
-      topRow.className = 'breach-card-top';
+      topRow.className = 'result-card-header';
+
+      const leftGroup = document.createElement('div');
+      leftGroup.className = 'breach-left-group';
+
+      if (rec.logo_url) {
+        const logoImg = document.createElement('img');
+        logoImg.className = 'breach-logo';
+        logoImg.src = rec.logo_url;
+        logoImg.alt = (rec.title || 'Source') + ' logo';
+        logoImg.loading = 'lazy';
+        logoImg.onerror = function () {
+          this.style.display = 'none';
+        };
+        leftGroup.appendChild(logoImg);
+      }
 
       const titleGroup = document.createElement('div');
       titleGroup.className = 'breach-title-group';
 
       const titleEl = document.createElement('span');
       titleEl.className = 'breach-name';
-      titleEl.textContent = b.title || b.name || 'Unnamed Breach';
-
-      const domainEl = document.createElement('span');
-      domainEl.className = 'breach-domain';
-      domainEl.textContent = b.domain ? b.domain : (b.is_verified ? 'Verified Incident' : 'Unverified Incident');
-
+      titleEl.textContent = rec.title || rec.source || 'Intelligence Match';
       titleGroup.appendChild(titleEl);
-      titleGroup.appendChild(domainEl);
-      topRow.appendChild(titleGroup);
 
-      if (b.breach_date) {
-        const dateBadge = document.createElement('span');
-        dateBadge.className = 'breach-date-badge';
-        dateBadge.textContent = 'Breached: ' + b.breach_date;
-        topRow.appendChild(dateBadge);
+      // OmniScan Engine Card Tag
+      const omniTag = document.createElement('span');
+      omniTag.className = 'omniscan-card-tag';
+      omniTag.textContent = 'OmniScan';
+      titleGroup.appendChild(omniTag);
+
+      const sourcePill = document.createElement('span');
+      sourcePill.className = 'provider-source-pill';
+      sourcePill.textContent = rec.source || 'Provider';
+      titleGroup.appendChild(sourcePill);
+
+      leftGroup.appendChild(titleGroup);
+      topRow.appendChild(leftGroup);
+
+      // Right metadata (Risk badge + Timestamp)
+      const rightGroup = document.createElement('div');
+      rightGroup.style.display = 'flex';
+      rightGroup.style.alignItems = 'center';
+      rightGroup.style.gap = '8px';
+
+      if (rec.risk_level) {
+        const riskSpan = document.createElement('span');
+        const isHigh = ['High', 'Critical'].includes(rec.risk_level);
+        riskSpan.className = 'password-risk-tag ' + (isHigh ? 'high-risk' : 'low-risk');
+        riskSpan.textContent = 'Risk: ' + rec.risk_level;
+        rightGroup.appendChild(riskSpan);
       }
 
+      if (rec.timestamp) {
+        const timeSpan = document.createElement('span');
+        timeSpan.className = 'result-timestamp';
+        timeSpan.textContent = rec.timestamp;
+        rightGroup.appendChild(timeSpan);
+      }
+
+      topRow.appendChild(rightGroup);
       card.appendChild(topRow);
 
       // Description
-      if (b.description) {
+      if (rec.description) {
         const descEl = document.createElement('p');
         descEl.className = 'breach-description';
-        descEl.textContent = b.description;
+        descEl.style.marginTop = '8px';
+        descEl.textContent = rec.description;
         card.appendChild(descEl);
       }
 
-      // Meta row (Pwn count, verified status)
-      const metaRow = document.createElement('div');
-      metaRow.className = 'breach-meta-row';
+      // Details Grid
+      if (rec.details && typeof rec.details === 'object' && Object.keys(rec.details).length > 0) {
+        const detailsGrid = document.createElement('div');
+        detailsGrid.className = 'result-details';
 
-      if (typeof b.pwn_count === 'number') {
-        const countSpan = document.createElement('span');
-        countSpan.textContent = 'Impacted Accounts: ' + b.pwn_count.toLocaleString();
-        metaRow.appendChild(countSpan);
-      }
-
-      if (b.is_sensitive) {
-        const sensitiveSpan = document.createElement('span');
-        sensitiveSpan.style.color = '#ff7b72';
-        sensitiveSpan.textContent = 'Sensitive Data';
-        metaRow.appendChild(sensitiveSpan);
-      }
-
-      card.appendChild(metaRow);
-
-      // Compromised Data Classes pills
-      if (Array.isArray(b.data_classes) && b.data_classes.length > 0) {
-        const dataClassesWrapper = document.createElement('div');
-        dataClassesWrapper.className = 'breach-dataclasses';
-
-        b.data_classes.forEach(function (dataClass) {
-          const pill = document.createElement('span');
-          pill.className = 'dataclass-pill';
-          if (dataClass.toLowerCase().includes('password') || dataClass.toLowerCase().includes('credential')) {
-            pill.classList.add('sensitive');
-          }
-          pill.textContent = dataClass;
-          dataClassesWrapper.appendChild(pill);
-        });
-
-        card.appendChild(dataClassesWrapper);
-      }
-
-      elements.resultsList.appendChild(card);
-    });
-
-    elements.resultsSection.style.display = 'block';
-  }
-
-  /**
-   * Safely render generic search results without innerHTML injection
-   * @param {Object} data
-   */
-  function renderGenericResults(data) {
-    if (!elements.resultsSection || !elements.resultsList) return;
-
-    // Reset results list safely
-    while (elements.resultsList.firstChild) {
-      elements.resultsList.removeChild(elements.resultsList.firstChild);
-    }
-
-    elements.resultsBadge.className = 'results-badge';
-
-    const records = (data && data.records) || [];
-    const total = data.total_results || records.length;
-
-    // Update Header
-    if (elements.resultsTitle) {
-      elements.resultsTitle.textContent = 'Intelligence Findings (' + total + ')';
-    }
-    if (elements.resultsBadge) {
-      elements.resultsBadge.textContent = total > 0 ? 'Verified Matches' : 'No Matches';
-    }
-
-    if (records.length === 0) {
-      const emptyDiv = document.createElement('div');
-      emptyDiv.className = 'results-empty';
-      emptyDiv.textContent = 'No records located for this identifier.';
-      elements.resultsList.appendChild(emptyDiv);
-      elements.resultsSection.style.display = 'block';
-      return;
-    }
-
-    // Render each record using safe DOM methods
-    records.forEach(function (rec) {
-      const card = document.createElement('div');
-      card.className = 'result-card';
-
-      // Header row
-      const cardHeader = document.createElement('div');
-      cardHeader.className = 'result-card-header';
-
-      const sourceSpan = document.createElement('span');
-      sourceSpan.className = 'result-source';
-      sourceSpan.textContent = rec.source || 'Intelligence Feed';
-
-      const timeSpan = document.createElement('span');
-      timeSpan.className = 'result-timestamp';
-      timeSpan.textContent = rec.timestamp || 'Recent';
-
-      cardHeader.appendChild(sourceSpan);
-      cardHeader.appendChild(timeSpan);
-      card.appendChild(cardHeader);
-
-      // Details grid
-      const detailsGrid = document.createElement('div');
-      detailsGrid.className = 'result-details';
-
-      // Target item
-      const targetItem = document.createElement('div');
-      targetItem.className = 'detail-item';
-      const targetLabel = document.createElement('span');
-      targetLabel.className = 'detail-label';
-      targetLabel.textContent = 'Identifier (' + (rec.record_type || 'ID') + ')';
-      const targetVal = document.createElement('span');
-      targetVal.className = 'detail-value';
-      targetVal.textContent = rec.identifier || '';
-      targetItem.appendChild(targetLabel);
-      targetItem.appendChild(targetVal);
-      detailsGrid.appendChild(targetItem);
-
-      // Key-value pairs from details dict
-      if (rec.details && typeof rec.details === 'object') {
         Object.keys(rec.details).forEach(function (key) {
           const item = document.createElement('div');
           item.className = 'detail-item';
@@ -449,9 +540,29 @@
           item.appendChild(val);
           detailsGrid.appendChild(item);
         });
+
+        card.appendChild(detailsGrid);
       }
 
-      card.appendChild(detailsGrid);
+      // Tags / Compromised Data Classes
+      if (Array.isArray(rec.tags) && rec.tags.length > 0) {
+        const tagsWrapper = document.createElement('div');
+        tagsWrapper.className = 'breach-dataclasses';
+
+        rec.tags.forEach(function (tag) {
+          const pill = document.createElement('span');
+          pill.className = 'dataclass-pill';
+          const lower = tag.toLowerCase();
+          if (lower.includes('password') || lower.includes('credential') || lower.includes('secret')) {
+            pill.classList.add('sensitive');
+          }
+          pill.textContent = tag;
+          tagsWrapper.appendChild(pill);
+        });
+
+        card.appendChild(tagsWrapper);
+      }
+
       elements.resultsList.appendChild(card);
     });
 

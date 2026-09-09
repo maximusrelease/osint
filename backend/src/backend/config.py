@@ -10,11 +10,10 @@ class Settings(BaseSettings):
     HOST: str = "0.0.0.0"
     PORT: int = 8000
 
-    # Have I Been Pwned (HIBP) Configuration
-    HIBP_API_KEY: str = ""
-    HIBP_USER_AGENT: str = "OSINT-Intel-Platform/1.0"
-    HIBP_API_BASE_URL: str = "https://haveibeenpwned.com/api/v3"
-    HIBP_TIMEOUT_SECONDS: float = 10.0
+    # XposedOrNot Configuration
+    XPOSEDORNOT_API_BASE_URL: str = "https://api.xposedornot.com/v1"
+    XPOSEDORNOT_TIMEOUT_SECONDS: float = 10.0
+    XPOSEDORNOT_ENABLE_MOCK_FALLBACK: bool = True
 
     model_config = SettingsConfigDict(
         env_file=".env",
