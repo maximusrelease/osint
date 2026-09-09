@@ -7,6 +7,7 @@ requires-python = ">=3.12"
 dependencies = [
     "dnspython>=2.8.0",
     "fastapi>=0.141.1",
+    "holehe>=1.61",
     "httpx>=0.28.1",
     "jinja2>=3.1.6",
     "omniscan>=2.0.6",

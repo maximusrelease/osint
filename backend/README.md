@@ -63,8 +63,15 @@ Once running, access:
 - **Email Breach Check (XposedOrNot)**: `POST /api/breach-check` or `POST /api/v1/breach-check`
 - **Intelligence Search Endpoint**: `POST /api/search` or `POST /api/v1/search`
 
-### XposedOrNot (XON) Integration
-The platform integrates with [XposedOrNot](https://xposedornot.com/api_doc) to perform real-time, privacy-preserving email breach lookups and risk analytics with no external API keys required.
+### Multi-Provider OSINT Intelligence Pipeline
+The platform includes built-in asynchronous intelligence providers:
+- **Holehe OSINT**: Checks 120+ platforms (GitHub, Twitter, Instagram, Spotify, etc.) for attached accounts and recovery hints without alerts or API keys.
+- **OmniScan Engine**: Live platform and username discovery.
+- **XposedOrNot (XON)**: Real-time, privacy-preserving email breach lookups and risk analytics.
+- **Mail & DNS Intelligence**: MX, SPF, DMARC validation and mailhost fingerprinting.
+- **Disposable Email Detection**: Disposable / burner domain classification.
+- **Phone Intelligence**: ITU format validation and carrier/geo lookup.
+- **Threat Feed Intelligence**: Tor exit node and threat blocklist checks.
 
 ---
 

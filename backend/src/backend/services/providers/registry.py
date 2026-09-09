@@ -5,6 +5,7 @@ from typing import Dict, List, Optional
 from backend.schemas.search import ProviderTelemetry, SearchRecord, SearchResponse
 from backend.services.providers.base import BaseIntelligenceProvider, ProviderResult
 from backend.services.providers.disposable_email_provider import DisposableEmailProvider
+from backend.services.providers.holehe_provider import HoleheProvider
 from backend.services.providers.mail_dns_provider import MailDNSProvider
 from backend.services.providers.omniscan_provider import OmniScanProvider
 from backend.services.providers.phone_intelligence_provider import PhoneIntelligenceProvider
@@ -68,7 +69,7 @@ class IntelligenceAggregator:
                 success=True,
                 type=query_type,
                 query=clean_query,
-                engine="OmniScan Multi-Tool Engine",
+                engine="BluOsint Multi-Tool Engine",
                 execution_time_ms=0.0,
                 total_results=0,
                 records=[],
@@ -76,7 +77,7 @@ class IntelligenceAggregator:
                 providers_succeeded=[],
                 providers_failed=[],
                 tool_telemetry=[],
-                message=f"No active OmniScan providers available for search type '{query_type}'.",
+                message=f"No active BluOsint providers available for search type '{query_type}'.",
             )
 
         providers_queried = [p.display_name for p in providers]
@@ -145,7 +146,7 @@ class IntelligenceAggregator:
 
         total_elapsed_ms = round((time.perf_counter() - start_total) * 1000.0, 2)
         total = len(aggregated_records)
-        message = f"OmniScan scanned {len(providers_queried)} tools: found {total} record{'s' if total != 1 else ''} across {len(providers_succeeded)} active tool{'s' if len(providers_succeeded) != 1 else ''}."
+        message = f"BluOsint scanned {len(providers_queried)} tools: found {total} record{'s' if total != 1 else ''} across {len(providers_succeeded)} active tool{'s' if len(providers_succeeded) != 1 else ''}."
         if providers_failed:
             message += f" ({len(providers_failed)} tool temporarily unavailable)"
 
@@ -153,7 +154,7 @@ class IntelligenceAggregator:
             success=True,
             type=query_type,
             query=clean_query,
-            engine="OmniScan Multi-Tool Engine",
+            engine="BluOsint Multi-Tool Engine",
             execution_time_ms=total_elapsed_ms,
             total_results=total,
             records=aggregated_records,
@@ -168,6 +169,7 @@ class IntelligenceAggregator:
 # Global registry and aggregator initialized with all available free-tier providers
 registry = IntelligenceRegistry()
 registry.register(OmniScanProvider())
+registry.register(HoleheProvider())
 registry.register(XposedOrNotProvider())
 registry.register(MailDNSProvider())
 registry.register(DisposableEmailProvider())

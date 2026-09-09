@@ -15,6 +15,12 @@ class Settings(BaseSettings):
     XPOSEDORNOT_TIMEOUT_SECONDS: float = 10.0
     XPOSEDORNOT_ENABLE_MOCK_FALLBACK: bool = True
 
+    # Holehe OSINT Configuration
+    HOLEHE_ENABLED: bool = True
+    HOLEHE_TIMEOUT_SECONDS: float = 8.0
+    HOLEHE_MAX_CONCURRENCY: int = 30
+    HOLEHE_ONLY_DETECTED: bool = True
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

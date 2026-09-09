@@ -171,6 +171,7 @@ source = { editable = "." }
 dependencies = [
     { name = "dnspython" },
     { name = "fastapi" },
+    { name = "holehe" },
     { name = "httpx" },
     { name = "jinja2" },
     { name = "omniscan" },
@@ -190,6 +191,7 @@ dev = [
 requires-dist = [
     { name = "dnspython", specifier = ">=2.8.0" },
     { name = "fastapi", specifier = ">=0.141.1" },
+    { name = "holehe", specifier = ">=1.61" },
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "jinja2", specifier = ">=3.1.6" },
     { name = "omniscan", specifier = ">=2.0.6" },

@@ -348,7 +348,7 @@
       const resetBtn = document.createElement('button');
       resetBtn.type = 'button';
       resetBtn.className = 'omniscan-filter-reset';
-      resetBtn.textContent = 'Show All OmniScan Tools';
+      resetBtn.textContent = 'Show All BluOsint Tools';
       resetBtn.addEventListener('click', function () {
         state.activeFilterTool = null;
         renderAggregatedResults(state.lastResultsData);
@@ -396,7 +396,7 @@
       if (state.activeFilterTool) {
         elements.resultsTitle.textContent = state.activeFilterTool + ' (' + total + ')';
       } else {
-        elements.resultsTitle.textContent = 'OmniScan Findings (' + total + ')';
+        elements.resultsTitle.textContent = 'BluOsint Findings (' + total + ')';
       }
     }
 
@@ -424,7 +424,7 @@
 
     const bannerText = document.createElement('span');
     bannerText.textContent = data.message || (hasBreaches
-      ? 'Security Warning: Intelligence matches detected across OmniScan tools.'
+      ? 'Security Warning: Intelligence matches detected across BluOsint tools.'
       : 'Good news: No security alerts or exposures located across active tools.');
     banner.appendChild(bannerText);
     elements.resultsList.appendChild(banner);
@@ -434,7 +434,7 @@
       emptyDiv.className = 'results-empty';
       emptyDiv.textContent = state.activeFilterTool
         ? 'No records located from ' + state.activeFilterTool + ' for this identifier.'
-        : 'No records located across active OmniScan intelligence tools.';
+        : 'No records located across active BluOsint intelligence tools.';
       elements.resultsList.appendChild(emptyDiv);
       elements.resultsSection.style.display = 'block';
       return;
